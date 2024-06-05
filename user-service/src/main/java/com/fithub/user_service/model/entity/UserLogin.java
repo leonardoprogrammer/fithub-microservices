@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table
+@Table(name = "user_login")
 public class UserLogin implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -93,6 +93,10 @@ public class UserLogin implements Serializable {
 
     public void setDateAlt(Timestamp dateAlt) {
         this.dateAlt = dateAlt;
+    }
+
+    public void setDateAltDefault() {
+        this.dateAlt = Timestamp.valueOf(LocalDateTime.now());
     }
 
     public User getUser() {

@@ -112,6 +112,10 @@ public class User implements Serializable {
         this.dateAlt = dateAlt;
     }
 
+    public void setDateAltDefault() {
+        this.dateAlt = Timestamp.valueOf(LocalDateTime.now());
+    }
+
     public Set<Role> getRoles() {
         return roles;
     }
