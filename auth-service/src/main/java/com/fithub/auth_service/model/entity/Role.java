@@ -1,10 +1,11 @@
 package com.fithub.auth_service.model.entity;
 
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
 
 @Entity
 @Table
-public class Role {
+public class Role implements GrantedAuthority {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,17 +38,8 @@ public class Role {
         this.name = name;
     }
 
-    public enum Values {
-        BASIC(1L);
-
-        long roleId;
-
-        Values(long roleId) {
-            this.roleId = roleId;
-        }
-
-        public long getRoleId() {
-            return roleId;
-        }
+    @Override
+    public String getAuthority() {
+        return this.name;
     }
 }

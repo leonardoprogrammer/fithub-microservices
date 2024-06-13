@@ -1,22 +1,19 @@
 package com.fithub.auth_service.controller;
 
-import com.fithub.auth_service.model.dto.RequestLoginDTO;
-import com.fithub.auth_service.model.dto.ResponseLoginDTO;
+import com.fithub.auth_service.component.JwtTokenProvider;
+import com.fithub.auth_service.model.dto.LoginResponseDTO;
 import com.fithub.auth_service.model.entity.User;
 import com.fithub.auth_service.model.entity.UserLogin;
-import com.fithub.auth_service.service.BCryptService;
-import com.fithub.auth_service.service.JwtService;
+import com.fithub.auth_service.model.record.LoginRequest;
 import com.fithub.auth_service.service.UserLoginService;
 import com.fithub.auth_service.service.UserService;
 import com.fithub.auth_service.utils.Utils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/authentication")
@@ -25,47 +22,38 @@ public class AuthenticationController {
 
     private final UserLoginService userLoginService;
     private final UserService userService;
-    private final JwtService jwtService;
+    private final JwtTokenProvider tokenProvider;
 
-    @Autowired
-    public AuthenticationController(UserLoginService userLoginService, UserService userService, JwtService jwtService) {
+    public AuthenticationController(UserLoginService userLoginService, UserService userService, JwtTokenProvider tokenProvider) {
         this.userLoginService = userLoginService;
         this.userService = userService;
-        this.jwtService = jwtService;
+        this.tokenProvider = tokenProvider;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Object> login(@RequestBody RequestLoginDTO requestLoginDTO) {
+    public ResponseEntity<Object> login(@RequestBody LoginRequest loginRequest) {
         Optional<UserLogin> userLoginOptional;
 
-        if (Utils.isNullOrEmpty(requestLoginDTO.getEmail())) {
-            if (Utils.isNullOrEmpty(requestLoginDTO.getPassword())) {
+        if (Utils.isNullOrEmpty(loginRequest.email())) {
+            if (Utils.isNullOrEmpty(loginRequest.password())) {
                 return ResponseEntity.badRequest().body("Informe as credenciais.");
             }
             return ResponseEntity.badRequest().body("Informe o email.");
-        } else if (Utils.isNullOrEmpty(requestLoginDTO.getPassword())) {
+        } else if (Utils.isNullOrEmpty(loginRequest.password())) {
             return ResponseEntity.badRequest().body("Informe a senha.");
         }
 
         // Busca o usuário pelo email
-        userLoginOptional = userLoginService.findByEmail(requestLoginDTO.getEmail());
+        userLoginOptional = userLoginService.findByEmail(loginRequest.email());
 
-        if (userLoginOptional.isEmpty() || !BCryptService.checkPassword(requestLoginDTO.getPassword(), userLoginOptional.get().getPassword())) {
-            //return new ResponseEntity<>("Credenciais inválidas.", HttpStatus.NOT_FOUND);
+        if (userLoginOptional.isEmpty() || !BCrypt.checkpw(loginRequest.password(), userLoginOptional.get().getPassword())) {
             throw new BadCredentialsException("Credenciais inválidas.");
         }
 
         User user = userService.findById(userLoginOptional.get().getUserId()).get();
 
-        // Gera o token
-        ResponseLoginDTO response = jwtService.generateToken(user.getId(), user.getRoles());
+        LoginResponseDTO response = tokenProvider.generateToken(user);
 
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/test")
-    @PreAuthorize("hasAuthority('SCOPE_BASIC')")
-    public ResponseEntity<Object> test() {
-        return ResponseEntity.ok("Teste de autenticação");
     }
 }

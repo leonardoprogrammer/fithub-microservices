@@ -1,16 +1,18 @@
 package com.fithub.auth_service.model.dto;
 
-public class ResponseLoginDTO {
+import java.util.Date;
+
+public class LoginResponseDTO {
 
     private String accessToken;
-    private Long expiresIn;
+    private Date expiryDate;
 
-    public ResponseLoginDTO() {
+    public LoginResponseDTO() {
     }
 
-    public ResponseLoginDTO(String accessToken, Long expiresIn) {
+    public LoginResponseDTO(String accessToken, Date expiryDate) {
         this.accessToken = accessToken;
-        this.expiresIn = expiresIn;
+        this.expiryDate = expiryDate;
     }
 
     public String getAccessToken() {
@@ -21,19 +23,19 @@ public class ResponseLoginDTO {
         this.accessToken = accessToken;
     }
 
-    public Long getExpiresIn() {
-        return expiresIn;
+    public Date getExpiryDate() {
+        return expiryDate;
     }
 
-    public void setExpiresIn(Long expiresIn) {
-        this.expiresIn = expiresIn;
+    public void setExpiryDate(Date expiryDate) {
+        this.expiryDate = expiryDate;
     }
 
     @Override
     public String toString() {
         return "ResponseLoginDTO{" +
                 "accessToken='" + accessToken + '\'' +
-                ", expiresIn=" + expiresIn +
+                ", expiryDate=" + expiryDate +
                 '}';
     }
 }
