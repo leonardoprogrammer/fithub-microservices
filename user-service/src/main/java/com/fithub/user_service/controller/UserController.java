@@ -2,13 +2,13 @@ package com.fithub.user_service.controller;
 
 import com.fithub.user_service.enums.Roles;
 import com.fithub.user_service.enums.Status;
-import com.fithub.user_service.model.dto.RequestRegisterUserDTO;
-import com.fithub.user_service.model.dto.RequestUpdateUserDTO;
-import com.fithub.user_service.model.dto.RequestUpdatePasswordDTO;
-import com.fithub.user_service.model.dto.RequestRequiredPasswordDTO;
 import com.fithub.user_service.model.entity.User;
 import com.fithub.user_service.model.entity.UserLogin;
 import com.fithub.user_service.model.entity.UserRoles;
+import com.fithub.user_service.model.record.RegisterUserRequest;
+import com.fithub.user_service.model.record.RequiredPasswordRequest;
+import com.fithub.user_service.model.record.UpdatePasswordRequest;
+import com.fithub.user_service.model.record.UpdateUserRequest;
 import com.fithub.user_service.service.UserLoginService;
 import com.fithub.user_service.service.UserRolesService;
 import com.fithub.user_service.service.UserService;
@@ -21,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,117 +40,135 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Object> registerUser(@RequestBody RequestRegisterUserDTO requestRegisterUserDTO) {
+    public ResponseEntity<Object> registerUser(@RequestBody RegisterUserRequest registerUserRequest) {
         // VALIDATIONS
-        if (Utils.isNullOrEmpty(requestRegisterUserDTO.getName())) {
+        if (Utils.isNullOrEmpty(registerUserRequest.name())) {
             return ResponseEntity.badRequest().body("Informe o nome.");
-        } else if (requestRegisterUserDTO.getName().length() < 3) {
+        } else if (registerUserRequest.name().length() < 3) {
             return ResponseEntity.badRequest().body("Nome deve conter o mínimo de 3 caracteres.");
         }
 
-        if (requestRegisterUserDTO.getDateBirth() == null) {
+        if (registerUserRequest.dateBirth() == null) {
             return ResponseEntity.badRequest().body("Informe a data de nascimento.");
-        } else if (requestRegisterUserDTO.getDateBirth().after(new Date())) {
+        } else if (registerUserRequest.dateBirth().after(new Date())) {
             return ResponseEntity.badRequest().body("Informe uma data válida.");
         }
 
-        if (requestRegisterUserDTO.getLogin() == null) {
+        if (registerUserRequest.login() == null) {
             return ResponseEntity.badRequest().body("Informe as credenciais de login.");
         }
 
-        if (Utils.isNullOrEmpty(requestRegisterUserDTO.getLogin().getEmail())) {
+        if (Utils.isNullOrEmpty(registerUserRequest.login().email())) {
             return ResponseEntity.badRequest().body("Informe o e-mail do login.");
-        } else if (!requestRegisterUserDTO.getLogin().getEmail().contains("@") ||
-                requestRegisterUserDTO.getLogin().getEmail().split("@").length != 2 ||
-                !requestRegisterUserDTO.getLogin().getEmail().split("@")[1].contains(".")) {
+        }
+
+        String email = registerUserRequest.login().email().trim();
+
+        if (!email.contains("@") ||
+                email.split("@").length != 2 ||
+                !email.split("@")[1].contains(".")) {
             return ResponseEntity.badRequest().body("Informe um e-mail válido.");
         }
 
-        if (Utils.isNullOrEmpty(requestRegisterUserDTO.getLogin().getPassword())) {
+        if (Utils.isNullOrEmpty(registerUserRequest.login().password())) {
             return ResponseEntity.badRequest().body("Informe a senha do login.");
-        } else if (requestRegisterUserDTO.getLogin().getPassword().length() < 8) {
+        }
+
+        String password = registerUserRequest.login().password().trim();
+
+        if (password.length() < 8) {
             return ResponseEntity.badRequest().body("Senha deve conter o mínimo de 8 caracteres.");
         }
 
         // CHECKS
-        if (userLoginService.existsByEmail(requestRegisterUserDTO.getLogin().getEmail())) {
+        if (userLoginService.existsByEmail(email)) {
             return ResponseEntity.badRequest().body("Já existe um login com este e-mail.");
         }
 
-        String cryptedPassword = BCrypt.hashpw(requestRegisterUserDTO.getLogin().getPassword(), BCrypt.gensalt());
+        //PROCESS
+        String cryptedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
         User user = new User();
-        BeanUtils.copyProperties(requestRegisterUserDTO, user);
+        BeanUtils.copyProperties(registerUserRequest, user);
         user.setStatus(Status.ACTIVATED.getValue());
 
         User newUser = userService.save(user);
-        newUser.setUserLogin(new UserLogin(user.getId(),
-                requestRegisterUserDTO.getLogin().getEmail(),
-                cryptedPassword));
-        userService.update(newUser);
+
+        UserLogin userLogin = new UserLogin(
+                user.getId(),
+                email,
+                cryptedPassword
+        );
+        userLoginService.update(userLogin);
 
         UserRoles roles = userRolesService.save(newUser.getId(), Roles.BASIC.getRoleId());
 
-        return ResponseEntity.ok(userService.findById(newUser.getId()).orElse(null));
+        return new ResponseEntity<>(userService.findById(newUser.getId()), HttpStatus.CREATED);
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Object> updateUser(@PathVariable UUID id, @RequestBody RequestUpdateUserDTO requestUpdateUserDTO) {
+    public ResponseEntity<Object> updateUser(@PathVariable UUID id, @RequestBody UpdateUserRequest updateUserRequest) {
         // VALIDATIONS
         if (id == null) {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        if (Utils.isNullOrEmpty(requestUpdateUserDTO.getName())) {
+        if (Utils.isNullOrEmpty(updateUserRequest.name())) {
             return ResponseEntity.badRequest().body("Nome não pode ficar em branco.");
-        } else if (requestUpdateUserDTO.getName().length() < 3) {
+        } else if (updateUserRequest.name().length() < 3) {
             return ResponseEntity.badRequest().body("Nome deve conter o mínimo de 3 caracteres.");
         }
 
-        if (requestUpdateUserDTO.getDateBirth() == null) {
+        if (updateUserRequest.dateBirth() == null) {
             return ResponseEntity.badRequest().body("Data de nascimento não pode ficar em branco.");
-        } else if (requestUpdateUserDTO.getDateBirth().after(new Date())) {
+        } else if (updateUserRequest.dateBirth().after(new Date())) {
             return ResponseEntity.badRequest().body("Informe uma data válida.");
         }
 
-        if (Utils.isNullOrEmpty(requestUpdateUserDTO.getEmail())) {
+        if (Utils.isNullOrEmpty(updateUserRequest.email())) {
             return ResponseEntity.badRequest().body("E-mail não pode ficar em branco.");
-        } else if (!requestUpdateUserDTO.getEmail().contains("@") ||
-                requestUpdateUserDTO.getEmail().split("@").length != 2 ||
-                !requestUpdateUserDTO.getEmail().split("@")[1].contains(".")) {
+        }
+
+        String email = updateUserRequest.email().trim();
+
+        if (!email.contains("@") ||
+                email.split("@").length != 2 ||
+                !email.split("@")[1].contains(".")) {
             return ResponseEntity.badRequest().body("Informe um e-mail válido.");
         }
 
-        if (Utils.isNullOrEmpty(requestUpdateUserDTO.getRequiredPassword())) {
+        if (Utils.isNullOrEmpty(updateUserRequest.requiredPassword())) {
             return ResponseEntity.badRequest().body("É necessário informar a senha para alterar.");
         }
 
-        User user = userService.findById(id).orElse(null);
+        String requiredPassword = updateUserRequest.requiredPassword().trim();
+
+        User user = userService.findById(id);
 
         // CHECKS
         if (user == null) {
             return ResponseEntity.badRequest().body("Não há usuário com este ID.");
         }
 
-        if (userLoginService.existsByEmail(requestUpdateUserDTO.getEmail())) {
+        if (userLoginService.existsByEmail(email)) {
             return ResponseEntity.badRequest().body("Já existe um login com este e-mail.");
         }
 
-        UserLogin userLogin = userLoginService.findByUserId(id).get();
+        UserLogin userLogin = userLoginService.findByUserId(id);
 
-        if (!BCrypt.checkpw(requestUpdateUserDTO.getRequiredPassword(), userLogin.getPassword())) {
+        if (!BCrypt.checkpw(requiredPassword, userLogin.getPassword())) {
             return ResponseEntity.badRequest().body("A senha está incorreta.");
         }
 
         // PROCESS
 
-        BeanUtils.copyProperties(requestUpdateUserDTO, user);
+        BeanUtils.copyProperties(updateUserRequest, user);
         user.setDateAltDefault();
-        /*user.getUserLogin().setEmail(requestUpdateUserDTO.getEmail());
+        /*user.getUserLogin().setEmail(updateUserRequest.getEmail());
         user.getUserLogin().setDateAltDefault();*/
         userService.update(user);
 
-        userLogin.setEmail(requestUpdateUserDTO.getEmail());
+        userLogin.setEmail(updateUserRequest.email());
         userLogin.setDateAltDefault();
         userLoginService.update(userLogin);
 
@@ -157,36 +176,40 @@ public class UserController {
     }
 
     @PutMapping("/update/{id}/password")
-    public ResponseEntity<Object> updatePassword(@PathVariable UUID id, @RequestBody RequestUpdatePasswordDTO requestUpdatePasswordDTO) {
+    public ResponseEntity<Object> updatePassword(@PathVariable UUID id, @RequestBody UpdatePasswordRequest updatePasswordRequest) {
         // VALIDATIONS
         if (id == null) {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        if (Utils.isNullOrEmpty(requestUpdatePasswordDTO.getRequiredPassword())) {
+        if (Utils.isNullOrEmpty(updatePasswordRequest.requiredPassword())) {
             return ResponseEntity.badRequest().body("Informe a senha atual.");
         }
 
-        if (Utils.isNullOrEmpty(requestUpdatePasswordDTO.getNewPassword())) {
+        if (Utils.isNullOrEmpty(updatePasswordRequest.newPassword())) {
             return ResponseEntity.badRequest().body("Informe a nova senha.");
-        } else if (requestUpdatePasswordDTO.getNewPassword().length() < 8) {
+        }
+
+        String newPassword = updatePasswordRequest.newPassword().trim();
+
+        if (newPassword.length() < 8) {
             return ResponseEntity.badRequest().body("A nova senha deve conter o mínimo de 8 caracteres.");
         }
 
-        UserLogin userLogin = userLoginService.findByUserId(id).orElse(null);
+        UserLogin userLogin = userLoginService.findByUserId(id);
 
         // CHECKS
         if (userLogin == null) {
             return ResponseEntity.badRequest().body("Não há login com este ID de usuário.");
         }
 
-        if (!BCrypt.checkpw(requestUpdatePasswordDTO.getRequiredPassword(), userLogin.getPassword())) {
+        if (!BCrypt.checkpw(updatePasswordRequest.requiredPassword(), userLogin.getPassword())) {
             return ResponseEntity.badRequest().body("A senha atual está incorreta.");
         }
 
         // PROCESS
 
-        String cryptedPassword = BCrypt.hashpw(requestUpdatePasswordDTO.getNewPassword(), BCrypt.gensalt());
+        String cryptedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
 
         userLogin.setPassword(cryptedPassword);
         userLogin.setDateAltDefault();
@@ -197,26 +220,26 @@ public class UserController {
     }
 
     @PutMapping("/activate/{id}")
-    public ResponseEntity<Object> activateUser(@PathVariable UUID id, @RequestBody RequestRequiredPasswordDTO requestRequiredPasswordDTO) {
+    public ResponseEntity<Object> activateUser(@PathVariable UUID id, @RequestBody RequiredPasswordRequest requiredPasswordRequest) {
         // VALIDATIONS
         if (id == null) {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        if (Utils.isNullOrEmpty(requestRequiredPasswordDTO.getRequiredPassword())) {
+        if (Utils.isNullOrEmpty(requiredPasswordRequest.requiredPassword())) {
             return ResponseEntity.badRequest().body("É necessário informar a senha para ativar a conta.");
         }
 
-        User user = userService.findById(id).orElse(null);
+        User user = userService.findById(id);
 
         // CHECKS
         if (user == null) {
             return ResponseEntity.badRequest().body("Não há usuário com este ID.");
         }
 
-        UserLogin userLogin = userLoginService.findByUserId(id).get();
+        UserLogin userLogin = userLoginService.findByUserId(id);
 
-        if (!BCrypt.checkpw(requestRequiredPasswordDTO.getRequiredPassword(), userLogin.getPassword())) {
+        if (!BCrypt.checkpw(requiredPasswordRequest.requiredPassword(), userLogin.getPassword())) {
             return ResponseEntity.badRequest().body("A senha está incorreta.");
         }
 
@@ -233,26 +256,26 @@ public class UserController {
     }
 
     @PutMapping("/deactivate/{id}")
-    public ResponseEntity<Object> deactivateUser(@PathVariable UUID id, @RequestBody RequestRequiredPasswordDTO requestRequiredPasswordDTO) {
+    public ResponseEntity<Object> deactivateUser(@PathVariable UUID id, @RequestBody RequiredPasswordRequest requiredPasswordRequest) {
         // VALIDATIONS
         if (id == null) {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        if (Utils.isNullOrEmpty(requestRequiredPasswordDTO.getRequiredPassword())) {
+        if (Utils.isNullOrEmpty(requiredPasswordRequest.requiredPassword())) {
             return ResponseEntity.badRequest().body("É necessário informar a senha para desativar a conta.");
         }
 
-        User user = userService.findById(id).orElse(null);
+        User user = userService.findById(id);
 
         // CHECKS
         if (user == null) {
             return ResponseEntity.badRequest().body("Não há usuário com este ID.");
         }
 
-        UserLogin userLogin = userLoginService.findByUserId(id).get();
+        UserLogin userLogin = userLoginService.findByUserId(id);
 
-        if (!BCrypt.checkpw(requestRequiredPasswordDTO.getRequiredPassword(), userLogin.getPassword())) {
+        if (!BCrypt.checkpw(requiredPasswordRequest.requiredPassword(), userLogin.getPassword())) {
             return ResponseEntity.badRequest().body("A senha está incorreta.");
         }
 
@@ -274,7 +297,7 @@ public class UserController {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        User user = userService.findById(id).orElse(null);
+        User user = userService.findById(id);
 
         if (user == null) {
             return new ResponseEntity<>("Não há usuário com este ID.", HttpStatus.NOT_FOUND);
@@ -283,13 +306,20 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<Object> getAllUsers() {
+        List<User> users = userService.findAllUsers();
+
+        return ResponseEntity.ok(users);
+    }
+
     @GetMapping("/{id}/login")
     public ResponseEntity<Object> getUserLoginByUserId(@PathVariable UUID id) {
         if (id == null) {
             return ResponseEntity.badRequest().body("Informe o ID do usuário.");
         }
 
-        UserLogin userLogin = userLoginService.findByUserId(id).orElse(null);
+        UserLogin userLogin = userLoginService.findByUserId(id);
 
         if (userLogin == null) {
             return new ResponseEntity<>("Não há login com este ID de usuário.", HttpStatus.NOT_FOUND);

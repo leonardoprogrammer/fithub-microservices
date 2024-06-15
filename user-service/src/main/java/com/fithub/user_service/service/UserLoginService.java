@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,16 +28,16 @@ public class UserLoginService {
         userLoginRepository.save(userLogin);
     }
 
-    public Optional<UserLogin> findById(UUID id) {
-        return userLoginRepository.findById(id);
+    public UserLogin findById(UUID id) {
+        return userLoginRepository.findById(id).orElse(null);
     }
 
-    public Optional<UserLogin> findByUserId(UUID userId) {
-        return userLoginRepository.findByUserId(userId);
+    public UserLogin findByUserId(UUID userId) {
+        return userLoginRepository.findByUserId(userId).orElse(null);
     }
 
-    public Optional<UserLogin> findByEmail(String email) {
-        return userLoginRepository.findByEmail(email);
+    public UserLogin findByEmail(String email) {
+        return userLoginRepository.findByEmail(email).orElse(null);
     }
 
     public boolean existsById(UUID id) {

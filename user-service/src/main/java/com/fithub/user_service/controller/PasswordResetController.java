@@ -1,9 +1,9 @@
 package com.fithub.user_service.controller;
 
-import com.fithub.user_service.model.dto.RequestRegisterPasswordResetDTO;
-import com.fithub.user_service.model.dto.RequestUpdatePasswordResetDTO;
 import com.fithub.user_service.model.entity.UserLogin;
 import com.fithub.user_service.model.entity.UserPasswordReset;
+import com.fithub.user_service.model.record.RegisterPasswordResetRequest;
+import com.fithub.user_service.model.record.UpdatePasswordResetRequest;
 import com.fithub.user_service.service.EmailService;
 import com.fithub.user_service.service.UserLoginService;
 import com.fithub.user_service.service.UserPasswordResetService;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/password-reset")
@@ -39,22 +38,22 @@ public class PasswordResetController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Object> createUserPasswordReset(@RequestBody RequestRegisterPasswordResetDTO requestRegisterPasswordResetDTO) {
-        if (Utils.isNullOrEmpty(requestRegisterPasswordResetDTO.getEmail())) {
+    public ResponseEntity<Object> createUserPasswordReset(@RequestBody RegisterPasswordResetRequest registerPasswordResetRequest) {
+        if (Utils.isNullOrEmpty(registerPasswordResetRequest.email())) {
             return ResponseEntity.badRequest().body("Informe o e-mail.");
         }
 
-        Optional<UserLogin> userLoginOptional = userLoginService.findByEmail(requestRegisterPasswordResetDTO.getEmail());
+        UserLogin userLogin = userLoginService.findByEmail(registerPasswordResetRequest.email());
 
-        if (userLoginOptional.isEmpty()) {
+        if (userLogin == null) {
             return ResponseEntity.badRequest().body("Nenhum usuário cadastrado com este e-mail.");
         }
 
         // REGISTRA SOLICITAÇÃO DE REDEFINIÇÃO
 
         UserPasswordReset userPasswordReset = new UserPasswordReset();
-        userPasswordReset.setEmail(requestRegisterPasswordResetDTO.getEmail());
-        userPasswordReset.setUserLoginId(userLoginOptional.get().getId());
+        userPasswordReset.setEmail(registerPasswordResetRequest.email());
+        userPasswordReset.setUserLoginId(userLogin.getId());
         userPasswordReset.setDateExpiration(Timestamp.valueOf(LocalDateTime.now().plusHours(1)));
 
         UserPasswordReset savedRequest = userPasswordResetService.save(userPasswordReset);
@@ -64,7 +63,7 @@ public class PasswordResetController {
         String link = environment.getProperty("domain.url") + "/password-reset/" + savedRequest.getId();
 
         emailService.sendSimpleMessage(
-                requestRegisterPasswordResetDTO.getEmail(),
+                registerPasswordResetRequest.email(),
                 "Redefinição de senha",
                 "Clique no link para redefinir sua senha: " + link
         );
@@ -78,23 +77,22 @@ public class PasswordResetController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<Object> updateUserPasswordReset(@RequestBody RequestUpdatePasswordResetDTO requestUpdatePasswordResetDTO) {
-        if (requestUpdatePasswordResetDTO.getId() == null || Utils.isNullOrEmpty(requestUpdatePasswordResetDTO.getId().toString())) {
+    public ResponseEntity<Object> updateUserPasswordReset(@RequestBody UpdatePasswordResetRequest updatePasswordResetRequest) {
+        if (updatePasswordResetRequest.id() == null || Utils.isNullOrEmpty(updatePasswordResetRequest.id().toString())) {
             return ResponseEntity.badRequest().body("Informe o ID da solicitação.");
-        } else if (Utils.isNullOrEmpty(requestUpdatePasswordResetDTO.getPassword())) {
+        } else if (Utils.isNullOrEmpty(updatePasswordResetRequest.password())) {
             return ResponseEntity.badRequest().body("Informe a nova senha.");
         }
 
-        Optional<UserPasswordReset> userPasswordResetOptional = userPasswordResetService.findById(requestUpdatePasswordResetDTO.getId());
-        UserPasswordReset userPasswordReset = userPasswordResetOptional.orElse(null);
+        UserPasswordReset userPasswordReset = userPasswordResetService.findById(updatePasswordResetRequest.id());
 
-        if (userPasswordResetOptional.isEmpty()) {
+        if (userPasswordReset == null) {
             return ResponseEntity.badRequest().body("O ID informado não corresponde a alguma solicitação de redefinição de senha.");
         }
 
-        UserLogin userLogin = userLoginService.findById(userPasswordReset.getUserLoginId()).get();
+        UserLogin userLogin = userLoginService.findById(userPasswordReset.getUserLoginId());
 
-        userLogin.setPassword(BCrypt.hashpw(requestUpdatePasswordResetDTO.getPassword(), BCrypt.gensalt()));
+        userLogin.setPassword(BCrypt.hashpw(updatePasswordResetRequest.password(), BCrypt.gensalt()));
         userLoginService.update(userLogin);
 
         userPasswordReset.setReset(true);

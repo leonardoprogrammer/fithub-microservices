@@ -34,9 +34,6 @@ public class UserLogin implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Timestamp dateAlt;
 
-    @OneToOne(mappedBy = "userLogin")
-    private User user;
-
     public UserLogin() {
     }
 
@@ -97,13 +94,5 @@ public class UserLogin implements Serializable {
 
     public void setDateAltDefault() {
         this.dateAlt = Timestamp.valueOf(LocalDateTime.now());
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 }

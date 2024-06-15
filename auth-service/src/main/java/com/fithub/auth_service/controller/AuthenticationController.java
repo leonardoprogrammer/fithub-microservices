@@ -50,7 +50,7 @@ public class AuthenticationController {
             throw new BadCredentialsException("Credenciais inválidas.");
         }
 
-        User user = userService.findById(userLoginOptional.get().getUserId()).get();
+        User user = userService.findById(userLoginOptional.get().getUserId());
 
         LoginResponseDTO response = tokenProvider.generateToken(user);
 

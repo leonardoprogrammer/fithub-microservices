@@ -48,7 +48,7 @@ public class User implements Serializable {
     )
     private Set<Role> roles;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id", referencedColumnName = "user_id")
     private UserLogin userLogin;
 

@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,8 +28,8 @@ public class UserPasswordResetService {
         userPasswordResetRepository.save(userPasswordReset);
     }
 
-    public Optional<UserPasswordReset> findById(UUID id) {
-        return userPasswordResetRepository.findById(id);
+    public UserPasswordReset findById(UUID id) {
+        return userPasswordResetRepository.findById(id).orElse(null);
     }
 
     public boolean existsById(UUID id) {

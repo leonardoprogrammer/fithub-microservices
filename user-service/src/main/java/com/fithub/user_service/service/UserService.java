@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,8 +29,12 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public Optional<User> findById(UUID id) {
-        return userRepository.findById(id);
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public User findById(UUID id) {
+        return userRepository.findById(id).orElse(null);
     }
 
     public boolean existsById(UUID id) {

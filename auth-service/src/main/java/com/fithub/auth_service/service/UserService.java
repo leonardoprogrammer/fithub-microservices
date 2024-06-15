@@ -5,7 +5,6 @@ import com.fithub.auth_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -18,8 +17,8 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Optional<User> findById(UUID id) {
-        return userRepository.findById(id);
+    public User findById(UUID id) {
+        return userRepository.findById(id).orElse(null);
     }
 
     public boolean existsById(UUID id) {
