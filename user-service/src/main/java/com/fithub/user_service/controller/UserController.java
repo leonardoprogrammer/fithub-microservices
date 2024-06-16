@@ -124,53 +124,16 @@ public class UserController {
         } else if (updateUserRequest.dateBirth().after(new Date())) {
             return ResponseEntity.badRequest().body("Informe uma data válida.");
         }
-
-        if (Utils.isNullOrEmpty(updateUserRequest.email())) {
-            return ResponseEntity.badRequest().body("E-mail não pode ficar em branco.");
-        }
-
-        String email = updateUserRequest.email().trim();
-
-        if (!email.contains("@") ||
-                email.split("@").length != 2 ||
-                !email.split("@")[1].contains(".")) {
-            return ResponseEntity.badRequest().body("Informe um e-mail válido.");
-        }
-
-        if (Utils.isNullOrEmpty(updateUserRequest.requiredPassword())) {
-            return ResponseEntity.badRequest().body("É necessário informar a senha para alterar.");
-        }
-
-        String requiredPassword = updateUserRequest.requiredPassword().trim();
-
-        User user = userService.findById(id);
-
         // CHECKS
-        if (user == null) {
+        if (!userService.existsById(id)) {
             return ResponseEntity.badRequest().body("Não há usuário com este ID.");
         }
 
-        if (userLoginService.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body("Já existe um login com este e-mail.");
-        }
-
-        UserLogin userLogin = userLoginService.findByUserId(id);
-
-        if (!BCrypt.checkpw(requiredPassword, userLogin.getPassword())) {
-            return ResponseEntity.badRequest().body("A senha está incorreta.");
-        }
-
         // PROCESS
-
+        User user = userService.findById(id);
         BeanUtils.copyProperties(updateUserRequest, user);
         user.setDateAltDefault();
-        /*user.getUserLogin().setEmail(updateUserRequest.getEmail());
-        user.getUserLogin().setDateAltDefault();*/
         userService.update(user);
-
-        userLogin.setEmail(updateUserRequest.email());
-        userLogin.setDateAltDefault();
-        userLoginService.update(userLogin);
 
         return ResponseEntity.ok("As alterações foram salvas.");
     }
@@ -208,7 +171,6 @@ public class UserController {
         }
 
         // PROCESS
-
         String cryptedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
 
         userLogin.setPassword(cryptedPassword);
@@ -240,7 +202,7 @@ public class UserController {
         UserLogin userLogin = userLoginService.findByUserId(id);
 
         if (!BCrypt.checkpw(requiredPasswordRequest.requiredPassword(), userLogin.getPassword())) {
-            return ResponseEntity.badRequest().body("A senha está incorreta.");
+            return ResponseEntity.badRequest().body("A senha informada está incorreta.");
         }
 
         if (user.getStatus().equals("A")) {
@@ -276,7 +238,7 @@ public class UserController {
         UserLogin userLogin = userLoginService.findByUserId(id);
 
         if (!BCrypt.checkpw(requiredPasswordRequest.requiredPassword(), userLogin.getPassword())) {
-            return ResponseEntity.badRequest().body("A senha está incorreta.");
+            return ResponseEntity.badRequest().body("A senha informada está incorreta.");
         }
 
         if (user.getStatus().equals("D")) {
@@ -284,7 +246,6 @@ public class UserController {
         }
 
         // PROCESS
-
         user.setStatus(Status.DEACTIVATED.getValue());
         userService.update(user);
 
@@ -304,27 +265,5 @@ public class UserController {
         }
 
         return ResponseEntity.ok(user);
-    }
-
-    @GetMapping("/all")
-    public ResponseEntity<Object> getAllUsers() {
-        List<User> users = userService.findAllUsers();
-
-        return ResponseEntity.ok(users);
-    }
-
-    @GetMapping("/{id}/login")
-    public ResponseEntity<Object> getUserLoginByUserId(@PathVariable UUID id) {
-        if (id == null) {
-            return ResponseEntity.badRequest().body("Informe o ID do usuário.");
-        }
-
-        UserLogin userLogin = userLoginService.findByUserId(id);
-
-        if (userLogin == null) {
-            return new ResponseEntity<>("Não há login com este ID de usuário.", HttpStatus.NOT_FOUND);
-        }
-
-        return ResponseEntity.ok(userLogin);
     }
 }
