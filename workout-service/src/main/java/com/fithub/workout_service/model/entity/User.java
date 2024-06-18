@@ -3,26 +3,32 @@ package com.fithub.workout_service.model.entity;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workout_exercise")
-public class WorkoutExercise implements Serializable {
+@Table(name = "users")
+public class User implements Serializable {
 
-    public static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "workout_id", nullable = false)
-    private UUID workoutId;
-
     @Column(length = 255, nullable = false)
     private String name;
+
+    @Column(name = "date_birth", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date dateBirth;
+
+    @Column(length = 10)
+    private String gender;
+
+    @Column(length = 1, nullable = false)
+    private String status;
 
     @Column(name = "date_inc", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -32,14 +38,6 @@ public class WorkoutExercise implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Timestamp dateAlt;
 
-    private List<WorkoutExerciseSeries> series;
-
-    public WorkoutExercise(UUID workoutId, String name) {
-        this.workoutId = workoutId;
-        this.name = name;
-        this.dateInc = Timestamp.valueOf(LocalDateTime.now());
-    }
-
     public UUID getId() {
         return id;
     }
@@ -48,20 +46,36 @@ public class WorkoutExercise implements Serializable {
         this.id = id;
     }
 
-    public UUID getWorkoutId() {
-        return workoutId;
-    }
-
-    public void setWorkoutId(UUID workoutId) {
-        this.workoutId = workoutId;
-    }
-
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Date getDateBirth() {
+        return dateBirth;
+    }
+
+    public void setDateBirth(Date dateBirth) {
+        this.dateBirth = dateBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public Timestamp getDateInc() {
@@ -78,17 +92,5 @@ public class WorkoutExercise implements Serializable {
 
     public void setDateAlt(Timestamp dateAlt) {
         this.dateAlt = dateAlt;
-    }
-
-    public void setDateAltDefault() {
-        this.dateAlt = Timestamp.valueOf(LocalDateTime.now());
-    }
-
-    public List<WorkoutExerciseSeries> getSeries() {
-        return series;
-    }
-
-    public void setSeries(List<WorkoutExerciseSeries> series) {
-        this.series = series;
     }
 }

@@ -1,5 +1,6 @@
 package com.fithub.workout_service.utils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,12 +31,16 @@ public class Utils {
         return value == null || value.length == 0;
     }
 
+    public static boolean isNullOrVazia(List<Object> listObject) {
+        return listObject == null || listObject.isEmpty();
+    }
+
     public static boolean isNullOrZero(Integer value) {
         return value == null || value == 0;
     }
 
-    public static boolean isNullOrVazia(List<Object> listObject) {
-        return listObject == null || listObject.isEmpty();
+    public static boolean isNullOrZero(BigDecimal value) {
+        return value == null || (value.compareTo(BigDecimal.ZERO) != 0);
     }
 
     public static boolean isNullOrZero(Double value) {

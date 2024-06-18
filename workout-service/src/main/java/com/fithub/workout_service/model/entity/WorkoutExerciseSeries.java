@@ -38,7 +38,11 @@ public class WorkoutExerciseSeries implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Timestamp dateAlt;
 
-    public WorkoutExerciseSeries() {
+    public WorkoutExerciseSeries(UUID workoutExerciseId, Integer quantity, Integer repetitions, BigDecimal weightKg) {
+        this.workoutExerciseId = workoutExerciseId;
+        this.quantity = quantity;
+        this.repetitions = repetitions;
+        this.weightKg = weightKg;
         this.dateInc = Timestamp.valueOf(LocalDateTime.now());
     }
 

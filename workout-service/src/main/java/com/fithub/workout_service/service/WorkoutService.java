@@ -5,8 +5,6 @@ import com.fithub.workout_service.repository.WorkoutRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,20 +18,19 @@ public class WorkoutService {
     }
 
     @Transactional
-    public Workout save(Workout workout) {
-        return workoutRepository.save(workout);
-    }
-
-    @Transactional
-    public void update(Workout workout) {
+    public void save(Workout workout) {
         workoutRepository.save(workout);
     }
 
-    public Optional<Workout> findById(UUID id) {
-        return workoutRepository.findById(id);
+    public Workout findById(UUID id) {
+        return workoutRepository.findById(id).orElse(null);
     }
 
     public boolean existsById(UUID id) {
         return workoutRepository.existsById(id);
+    }
+
+    public void deleteById(UUID id) {
+        workoutRepository.deleteById(id);
     }
 }

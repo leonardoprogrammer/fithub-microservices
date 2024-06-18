@@ -7,6 +7,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -51,6 +52,8 @@ public class Workout implements Serializable {
     @Column(name = "date_alt")
     @Temporal(TemporalType.TIMESTAMP)
     private Timestamp dateAlt;
+
+    private List<WorkoutExercise> exercises;
 
     public Workout() {
         this.dateInc = Timestamp.valueOf(LocalDateTime.now());
@@ -138,5 +141,13 @@ public class Workout implements Serializable {
 
     public void setDateAltDefault() {
         this.dateAlt = Timestamp.valueOf(LocalDateTime.now());
+    }
+
+    public List<WorkoutExercise> getExercises() {
+        return exercises;
+    }
+
+    public void setExercises(List<WorkoutExercise> exercises) {
+        this.exercises = exercises;
     }
 }
